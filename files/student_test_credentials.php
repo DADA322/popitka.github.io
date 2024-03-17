@@ -1,7 +1,41 @@
 <?php
-session_start();
-if(!isset($_SESSION["user_id"]))
-  header("Location:../index.php");
+    include '../../database/config.php';
+    include "../assets/vendor/fpdf/fpdf.php";
+
+    session_start();
+    if(!isset($_SESSION["user_id"]))
+      header("Location:../index.php");
+    $test_id = $_POST['test_id'];
+
+
+   	if(isset($_POST['print'])) {
+   		$test_id = $_POST['test_id'];
+
+		$pdf = new FPDF();
+		$pdf->AddPage();
+		$pdf->SetFont('Arial','B',12);
+
+        $sql = "SELECT id,rollno,password from students where test_id = '$test_id' order by id ASC";
+        $result = mysqli_query($conn,$sql);
+        $i = 1;
+        while($row = mysqli_fetch_assoc($result)) {
+            $rollno_id = $row["rollno"];
+            $sql1 = "SELECT * from student_data where id = $rollno_id";
+            $result1 = mysqli_query($conn,$sql1);
+            $row1 = mysqli_fetch_assoc($result1);
+        	$pdf->Cell(30,12,$row1["rollno"],1,0,"C");
+        	if( $i%3 == 0 )
+        		$pdf->MultiCell(30,12,$row["password"]."\n",1,"C");
+        	else
+    		{
+    			$pdf->Cell(30,12,$row["password"]."\t",1,0,"C");
+    			$pdf->Cell(5,12,"\t",0,0,"C");
+    		}
+        	$i++;
+   		}
+   		$pdf->Output();   	
+   	}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -46,7 +80,7 @@ if(!isset($_SESSION["user_id"]))
                 <span class="navbar-toggler-bar bar3"></span>
               </button>
             </div>
-            <a class="navbar-brand" href="#pablo">Dashboard Basic Settings</a>
+            <a class="navbar-brand" href="#pablo">Student Test Credentials</a>
           </div>
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navigation" aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-bar navbar-kebab"></span>
@@ -66,57 +100,67 @@ if(!isset($_SESSION["user_id"]))
               <div class="card-header">
                 <div class="row">
                   <div class="col-md-8">
-                    <h5 class="title">Pending Quiz Tests</h5>
+                    <h5 class="title">Students Test Credentials</h5>
                   </div>
-                  <div class="col-md-4">
-                    <button class="btn btn-primary btn-block btn-round" onclick="redirect_to_new_test()" style="margin-top:0px;width:100px !important;float:right !important;">NEW</button>
+                <div class="col-md-4">
+                    <button class="btn btn-primary btn-block btn-round" onclick="completed()" style="margin-top:0px;width:100px !important;float:right !important;">Print</button>
                   </div>
                 </div>  
               </div>
-              <div class="card-body">
-                  <?php
-                    include '../../database/config.php';
-                    $user_id = $_SESSION["user_id"];
-                    $sql = "select * from tests where teacher_id = $user_id and status_id IN (1,2)";
-                    $result = mysqli_query($conn,$sql);
-                    if(mysqli_num_rows($result) > 0) {
-                      while($row = mysqli_fetch_assoc($result)) {
-                        ?>
-                          <div class="card" style="background:#ededed;">
-                              <div class="card-body" onclick="submit(<?= $row['id'];?>)">
-                                <h6><?= $row["name"];?></h6>
-                                <div class="row">
-                                  <div class="col-md-8">
-                                    <p>Subject - <?= $row["subject"];?></p>
-                                  </div>
-                                  <div class="col-md-4"> 
-                                    <p style="text-align:right;">Date - <?= $row["date"];?></p>
-                                  </div>
-                                </div>
-                              </div>
-                          </div>
+              <div class="card-body" id="card-body">
+                <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
+                  <input type="hidden" name="general_settings"/>
+                    <table class="table contact_table table-striped table-bordered">
+                        <thead class=" text-primary">
+                        <th>
+                            SERIAL ID
+                        </th>
+                        <th>
+                            ROLL NUMBER
+                        </th>
+                        <th>
+                            Password
+                        </th>
+                        </thead>
+                        <tbody>  
                         <?php
-                      }
-                    }
-                    else {
-                      ?>
-                      <div id="no-data">
-                        <center>
-                          <img src="../assets/img/no-data.svg" height="400" width="400"/>
-                          <center><h5>No Data</h5></center>
-                        </center>
-                      </div>
-                      <?php
-                    }
-                  ?>
+
+                            $sql = "SELECT id,rollno,password from students where test_id = '$test_id' order by id ASC";
+                            $result = mysqli_query($conn,$sql);
+                            $i = 1;
+                            while($row = mysqli_fetch_assoc($result)) {
+                                $rollno_id = $row["rollno"];
+                                $sql1 = "SELECT * from student_data where id = $rollno_id";
+                                $result1 = mysqli_query($conn,$sql1);
+                                $row1 = mysqli_fetch_assoc($result1);
+                            ?>    
+                                <tr>
+                                    <td>
+                                        <?= $i; ?>
+                                    </td>
+                                    <td>
+                                        <?= $row1["rollno"];?>
+                                    </td>     
+                                    <td>
+                                        <?= $row["password"];?>
+                                    </td>     
+                                </tr>
+                        <?php
+                            $i++;
+                            }       
+                        ?>                         
+                        </tbody>
+                    </table>
+                </form>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <form method="POST" action="test_details.php" id="test_details">
-        <input type="hidden" id="test_id" name="test_id">
+      <form id="form-print" method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" target='_blank'>
+        <input type="hidden" name="print">
+        <input type="hidden" name="test_id" value="<?= $test_id;?>">
       </form>
       <!-- footer -->
       <?php
@@ -139,9 +183,9 @@ if(!isset($_SESSION["user_id"]))
     window.location = "new_test.php";
   }
 
-  function submit(val1) {
-    document.getElementById("test_id").value = val1;
-    document.getElementById("test_details").submit();
-  }
+      function completed() {
+      document.getElementById("form-print").submit();
+    }
+
 </script>
 </html>

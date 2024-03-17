@@ -46,7 +46,7 @@ if(!isset($_SESSION["user_id"]))
                 <span class="navbar-toggler-bar bar3"></span>
               </button>
             </div>
-            <a class="navbar-brand" href="#pablo">Dashboard Basic Settings</a>
+            <a class="navbar-brand" href="#pablo">Statistics</a>
           </div>
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navigation" aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-bar navbar-kebab"></span>
@@ -66,10 +66,7 @@ if(!isset($_SESSION["user_id"]))
               <div class="card-header">
                 <div class="row">
                   <div class="col-md-8">
-                    <h5 class="title">Pending Quiz Tests</h5>
-                  </div>
-                  <div class="col-md-4">
-                    <button class="btn btn-primary btn-block btn-round" onclick="redirect_to_new_test()" style="margin-top:0px;width:100px !important;float:right !important;">NEW</button>
+                    <h5 class="title">Completed Quiz Tests</h5>
                   </div>
                 </div>  
               </div>
@@ -77,13 +74,13 @@ if(!isset($_SESSION["user_id"]))
                   <?php
                     include '../../database/config.php';
                     $user_id = $_SESSION["user_id"];
-                    $sql = "select * from tests where teacher_id = $user_id and status_id IN (1,2)";
+                    $sql = "select * from tests where teacher_id = $user_id and status_id = 3";
                     $result = mysqli_query($conn,$sql);
                     if(mysqli_num_rows($result) > 0) {
                       while($row = mysqli_fetch_assoc($result)) {
                         ?>
                           <div class="card" style="background:#ededed;">
-                              <div class="card-body" onclick="submit(<?= $row['id'];?>)">
+                              <div class="card-body" onclick="submit(<?= $row['id'];?>,'<?php echo $row['name'];?>')">
                                 <h6><?= $row["name"];?></h6>
                                 <div class="row">
                                   <div class="col-md-8">
@@ -115,8 +112,9 @@ if(!isset($_SESSION["user_id"]))
         </div>
       </div>
 
-      <form method="POST" action="test_details.php" id="test_details">
+      <form method="POST" action="test_stats.php" id="test_details">
         <input type="hidden" id="test_id" name="test_id">
+        <input type="hidden" id="test_name" name="test_name">
       </form>
       <!-- footer -->
       <?php
@@ -139,8 +137,9 @@ if(!isset($_SESSION["user_id"]))
     window.location = "new_test.php";
   }
 
-  function submit(val1) {
+  function submit(val1,val2) {
     document.getElementById("test_id").value = val1;
+    document.getElementById("test_name").value = val2;
     document.getElementById("test_details").submit();
   }
 </script>

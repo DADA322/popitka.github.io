@@ -1,13 +1,10 @@
-<?php
-session_start();
-if(!isset($_SESSION["user_id"]))
-  header("Location:../index.php");
-?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <link rel="apple-touch-icon" sizes="76x76" href="../assets/img/apple-icon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.10.1/bootstrap-table.min.css">
   <link rel="icon" type="image/png" href="../assets/img/favicon.png">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
   <meta name="robots" content="noindex">
@@ -26,6 +23,7 @@ if(!isset($_SESSION["user_id"]))
   <link href="../assets/css/now-ui-dashboard.css?v=1.1.0" rel="stylesheet" />
   <!-- <link type="text/css" rel="stylesheet" href="http://jqueryte.com/css/jquery-te.css" charset="utf-8"> -->
   <link href="../assets/css/main.css" rel="stylesheet" />
+
 </head>
 
 <body class="">
@@ -46,14 +44,14 @@ if(!isset($_SESSION["user_id"]))
                 <span class="navbar-toggler-bar bar3"></span>
               </button>
             </div>
-            <a class="navbar-brand" href="#pablo">Dashboard Basic Settings</a>
+            <a class="navbar-brand" href="#pablo">View Data</a>
           </div>
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navigation" aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-bar navbar-kebab"></span>
             <span class="navbar-toggler-bar navbar-kebab"></span>
             <span class="navbar-toggler-bar navbar-kebab"></span>
           </button>
-          <?php include "navitem.php"; ?>
+          <!-- <?php include "navitem.php"; ?> -->
         </div>
       </nav>
       <!-- End Navbar -->
@@ -66,58 +64,38 @@ if(!isset($_SESSION["user_id"]))
               <div class="card-header">
                 <div class="row">
                   <div class="col-md-8">
-                    <h5 class="title">Pending Quiz Tests</h5>
+                    <h5 class="title">All Class and Students Data</h5>
                   </div>
-                  <div class="col-md-4">
-                    <button class="btn btn-primary btn-block btn-round" onclick="redirect_to_new_test()" style="margin-top:0px;width:100px !important;float:right !important;">NEW</button>
+                  <div class="col-md-2">
+                    <select id="options" name="options" class="btn-round" required style="width:100%;">
+                        <option id="" selected="true" value="" disabled="disabled">Select class</option>
+                       
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <button onclick = 'populateTable()' class="btn btn-primary btn-block btn-round" style="margin-top:0px;width:100px !important;float:right !important; onclick='getStudentsFromClass()' ">FIND</button>    
                   </div>
                 </div>  
               </div>
               <div class="card-body">
-                  <?php
-                    include '../../database/config.php';
-                    $user_id = $_SESSION["user_id"];
-                    $sql = "select * from tests where teacher_id = $user_id and status_id IN (1,2)";
-                    $result = mysqli_query($conn,$sql);
-                    if(mysqli_num_rows($result) > 0) {
-                      while($row = mysqli_fetch_assoc($result)) {
-                        ?>
-                          <div class="card" style="background:#ededed;">
-                              <div class="card-body" onclick="submit(<?= $row['id'];?>)">
-                                <h6><?= $row["name"];?></h6>
-                                <div class="row">
-                                  <div class="col-md-8">
-                                    <p>Subject - <?= $row["subject"];?></p>
-                                  </div>
-                                  <div class="col-md-4"> 
-                                    <p style="text-align:right;">Date - <?= $row["date"];?></p>
-                                  </div>
-                                </div>
-                              </div>
-                          </div>
-                        <?php
-                      }
-                    }
-                    else {
-                      ?>
-                      <div id="no-data">
-                        <center>
-                          <img src="../assets/img/no-data.svg" height="400" width="400"/>
-                          <center><h5>No Data</h5></center>
-                        </center>
-                      </div>
-                      <?php
-                    }
-                  ?>
+                <!-- <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>"> -->
+                  <input type="hidden" name="general_settings"/>
+                  <!-- table contact_table table-striped table-bordered -->
+                    
+                  <table id="roll_numbers_table">
+                  <thead>
+                      <tr>
+                          <th data-field= "id">ID</th>
+                          <th data-field="rollno">Roll Number</th>
+                      </tr>
+                  </thead>
+              </table>
+                <!-- </form> -->
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <form method="POST" action="test_details.php" id="test_details">
-        <input type="hidden" id="test_id" name="test_id">
-      </form>
       <!-- footer -->
       <?php
         include "footer.php";
@@ -133,15 +111,41 @@ if(!isset($_SESSION["user_id"]))
   <!-- Control Center for Now Ui Dashboard: parallax effects, scripts for the example pages etc -->
   <script src="../assets/js/now-ui-dashboard.min.js?v=1.1.0" type="text/javascript"></script>
   <!-- <script src="http://jqueryte.com/js/jquery-te-1.4.0.min.js"></script> -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.10.1/bootstrap-table.min.js"></script>
 </body>
 <script>
-  function redirect_to_new_test() {
-    window.location = "new_test.php";
-  }
 
-  function submit(val1) {
-    document.getElementById("test_id").value = val1;
-    document.getElementById("test_details").submit();
+var total_count;
+  $( document ).ready(function() {
+    $.ajax({
+						type: 'POST',
+						url: 'get_classes.php',
+						success: function (response) {
+              response.counter = 'foo';
+              var opts = $.parseJSON(response);
+                $.each(opts, function(i, d) {
+                    $('#options').append('<option value="' + d + '">' + d + '</option>');
+                });
+						}
+		});
+  });
+
+  function populateTable(){
+    $.ajax({
+						type: 'POST',
+						url: 'get_student_from_class.php',
+            data : {
+              'class_name' : $('#options option:selected').val(),
+            },
+            datatype : 'json',
+						success: function (response) {
+              var jsondata = JSON.parse(response);
+                $('#roll_numbers_table').bootstrapTable({
+                  data:jsondata,
+                });
+          }
+    });
   }
+  
 </script>
 </html>
